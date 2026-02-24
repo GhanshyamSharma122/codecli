@@ -11,6 +11,7 @@ class AutocompleteInput {
         this.selectedIndex = 0;
         this.maxVisible = 8;
         this.drawnLines = 0;
+        this.drawnRows = 0;
         this.lastDrawnRows = 1;
     }
 
@@ -25,6 +26,7 @@ class AutocompleteInput {
             let suggestions = [];
             this.selectedIndex = 0;
             this.drawnLines = 0;
+            this.drawnRows = 0;
             this.lastDrawnRows = 1;
 
             if (process.stdin.isTTY) {
@@ -34,7 +36,7 @@ class AutocompleteInput {
             process.stdin.setEncoding('utf8');
 
             const cleanup = () => {
-                this._eraseDropdown();
+                this._eraseDropdown(input, cursorPos);
                 if (process.stdin.isTTY) {
                     process.stdin.setRawMode(false);
                 }
@@ -43,12 +45,12 @@ class AutocompleteInput {
             };
 
             const updateSuggestions = () => {
-                this._eraseDropdown();
+                this._eraseDropdown(input, cursorPos);
                 if (input.startsWith('/') && input.length >= 1) {
                     suggestions = this._getSuggestions(input);
                     this.selectedIndex = Math.min(this.selectedIndex, Math.max(0, suggestions.length - 1));
                     if (suggestions.length > 0) {
-                        this._drawDropdown(suggestions);
+                        this._drawDropdown(suggestions, input, cursorPos);
                     }
                 } else {
                     suggestions = [];
@@ -71,6 +73,8 @@ class AutocompleteInput {
                     process.stdout.write(`\x1b[${this.lastDrawnRows - 1}A`);
                 }
                 process.stdout.write('\r\x1b[J'); // Reset to start and clear everything below
+                this.drawnLines = 0; // Dropdown is now cleared by \x1b[J
+                this.drawnRows = 0;
 
                 process.stdout.write(promptLine + input);
 
@@ -137,7 +141,7 @@ class AutocompleteInput {
                     if (suggestions.length > 0) {
                         input = suggestions[this.selectedIndex].full + ' ';
                         cursorPos = input.length;
-                        this._eraseDropdown();
+                        this._eraseDropdown(input, cursorPos);
                         suggestions = [];
                         redrawLine();
                     }
@@ -159,8 +163,8 @@ class AutocompleteInput {
                 if (key === '\x1b[A') {
                     if (suggestions.length > 0) {
                         this.selectedIndex = (this.selectedIndex - 1 + suggestions.length) % suggestions.length;
-                        this._eraseDropdown();
-                        this._drawDropdown(suggestions);
+                        this._eraseDropdown(input, cursorPos);
+                        this._drawDropdown(suggestions, input, cursorPos);
                     }
                     return;
                 }
@@ -169,8 +173,8 @@ class AutocompleteInput {
                 if (key === '\x1b[B') {
                     if (suggestions.length > 0) {
                         this.selectedIndex = (this.selectedIndex + 1) % suggestions.length;
-                        this._eraseDropdown();
-                        this._drawDropdown(suggestions);
+                        this._eraseDropdown(input, cursorPos);
+                        this._drawDropdown(suggestions, input, cursorPos);
                     }
                     return;
                 }
@@ -208,8 +212,8 @@ class AutocompleteInput {
             const onResize = () => {
                 redrawLine();
                 if (suggestions.length > 0) {
-                    this._eraseDropdown();
-                    this._drawDropdown(suggestions);
+                    this._eraseDropdown(input, cursorPos);
+                    this._drawDropdown(suggestions, input, cursorPos);
                 }
             };
 
@@ -231,13 +235,46 @@ class AutocompleteInput {
             }));
     }
 
-    _drawDropdown(suggestions) {
+    _calculateTotalRows(suggestions) {
+        if (suggestions.length === 0) return 0;
+        const cols = process.stdout.columns || 80;
+        const gutterLen = this._getGutter().length;
+        const maxNameLen = Math.max(...suggestions.map(s => s.name.length));
+
+        let totalRows = 0;
+        for (const s of suggestions) {
+            // Line: gutter + " " + prefix(2) + namePart(maxNameLen + 1) + "  " + desc
+            const lineLen = gutterLen + 1 + 2 + (maxNameLen + 1) + 2 + s.description.length;
+            totalRows += Math.ceil(lineLen / cols) || 1;
+        }
+        return totalRows;
+    }
+
+    _drawDropdown(suggestions, input, cursorPos) {
         if (suggestions.length === 0) return;
 
         const gutter = this._getGutter();
-        process.stdout.write('\n');
-        const maxNameLen = Math.max(...suggestions.map(s => s.name.length));
+        const cols = process.stdout.columns || 80;
+        const visiblePromptLen = gutter.length + 2;
+        const totalTextPos = visiblePromptLen + cursorPos;
+        const visibleFullLen = visiblePromptLen + input.length;
 
+        const targetRow = Math.floor(totalTextPos / cols);
+        const lastRow = Math.floor((visibleFullLen - 1) / cols);
+        const rowDiffToEnd = lastRow - targetRow;
+
+        // 1. Move to the very end of the prompt text
+        if (rowDiffToEnd > 0) {
+            process.stdout.write(`\x1b[${rowDiffToEnd}B`);
+        }
+
+        const lastCol = (visibleFullLen % cols) || cols;
+        process.stdout.write(`\r\x1b[${lastCol + 1}G`);
+
+        // 2. Clear below and draw suggestions
+        process.stdout.write('\n\x1b[J');
+
+        const maxNameLen = Math.max(...suggestions.map(s => s.name.length));
         for (let i = 0; i < suggestions.length; i++) {
             const s = suggestions[i];
             const isSelected = i === this.selectedIndex;
@@ -254,18 +291,49 @@ class AutocompleteInput {
         }
 
         this.drawnLines = suggestions.length;
-        process.stdout.write(`\x1b[${this.drawnLines}A`);
+        this.drawnRows = this._calculateTotalRows(suggestions);
+
+        // 3. Move back up exactly drawnRows + the extra \n we added + rowDiffToEnd
+        const targetCol = (totalTextPos % cols) || cols;
+        process.stdout.write(`\x1b[${this.drawnRows + rowDiffToEnd}A`);
+        process.stdout.write(`\r\x1b[${targetCol + 1}G`);
     }
 
-    _eraseDropdown() {
-        if (this.drawnLines === 0) return;
-        process.stdout.write('\n');
-        for (let i = 0; i < this.drawnLines; i++) {
-            process.stdout.write('\x1b[K');
-            if (i < this.drawnLines - 1) process.stdout.write('\n');
+    _eraseDropdown(input = '', cursorPos = 0) {
+        if (this.drawnRows === 0) return;
+
+        const gutter = this._getGutter();
+        const cols = process.stdout.columns || 80;
+        const visiblePromptLen = gutter.length + 2;
+        const totalTextPos = visiblePromptLen + cursorPos;
+        const visibleFullLen = visiblePromptLen + input.length;
+
+        const targetRow = Math.floor(totalTextPos / cols);
+        const lastRow = Math.floor((visibleFullLen - 1) / cols);
+        const rowDiffToEnd = lastRow - targetRow;
+
+        // 1. Move to the very end of the prompt
+        if (rowDiffToEnd > 0) {
+            process.stdout.write(`\x1b[${rowDiffToEnd}B`);
         }
-        process.stdout.write(`\x1b[${this.drawnLines}A`);
+        const lastCol = (visibleFullLen % cols) || cols;
+        process.stdout.write(`\r\x1b[${lastCol + 1}G`);
+
+        // 2. Clear everything below prompt
+        process.stdout.write('\n\x1b[J');
+
+        // 3. Move back up to the line ABOVE the newline we just cleared
+        process.stdout.write('\x1b[1A');
+
+        // 4. Move up the rowDiff and restore target column
+        if (rowDiffToEnd > 0) {
+            process.stdout.write(`\x1b[${rowDiffToEnd}A`);
+        }
+        const targetCol = (totalTextPos % cols) || cols;
+        process.stdout.write(`\r\x1b[${targetCol + 1}G`);
+
         this.drawnLines = 0;
+        this.drawnRows = 0;
     }
 }
 
