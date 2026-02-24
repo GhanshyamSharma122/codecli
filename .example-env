@@ -1,6 +1,15 @@
+AZURE_OPENAI_API_KEY=
+AZURE_OPENAI_ENDPOINT=
+AZURE_OPENAI_DEPLOYMENT=
+AZURE_OPENAI_API_VERSION=
+
 
 OLLAMA_HOST=http://localhost:11434
 OLLAMA_MODEL=qwen3-coder:480b-cloud
+
+# Google Gemini
+GEMINI_API_KEY=
+GEMINI_MODEL=
 
 # Default provider: azure-openai | ollama | gemini
 DEFAULT_PROVIDER=ollama
