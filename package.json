@@ -1,0 +1,39 @@
+{
+  "name": "codecli",
+  "version": "1.0.0",
+  "description": "AI-powered coding assistant CLI — Claude Code clone with Azure OpenAI, Ollama & Gemini",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "codecli": "./bin/codecli.js"
+  },
+  "scripts": {
+    "start": "node bin/codecli.js",
+    "dev": "node --watch bin/codecli.js"
+  },
+  "keywords": [
+    "cli",
+    "ai",
+    "coding",
+    "assistant",
+    "openai",
+    "ollama",
+    "gemini"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "chalk": "^5.3.0",
+    "cli-highlight": "^2.1.11",
+    "commander": "^12.1.0",
+    "diff": "^7.0.0",
+    "dotenv": "^16.4.7",
+    "glob": "^11.0.0",
+    "inquirer": "^12.3.0",
+    "marked": "^15.0.0",
+    "marked-terminal": "^7.2.0",
+    "ora": "^8.1.1",
+    "uuid": "^11.0.0",
+    "wrap-ansi": "^10.0.0"
+  }
+}
