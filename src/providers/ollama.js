@@ -6,8 +6,8 @@ class OllamaProvider extends BaseProvider {
         super(config);
         this.name = 'ollama';
         const settings = config.get('providers.ollama') || {};
-        this.host = settings.host || process.env.OLLAMA_HOST || 'http://localhost:11434';
-        this.model = settings.model || process.env.OLLAMA_MODEL || 'llama3.2';
+        this.host = settings.host || '';
+        this.model = settings.model || '';
     }
 
     formatTools(tools) {

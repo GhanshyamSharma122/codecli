@@ -24,6 +24,8 @@ class AutocompleteInput {
             let input = '';
             let cursorPos = 0;
             let suggestions = [];
+            let isPasting = false;
+            let pasteBuffer = '';
             this.selectedIndex = 0;
             this.drawnLines = 0;
             this.drawnRows = 0;
@@ -56,6 +58,23 @@ class AutocompleteInput {
                     suggestions = [];
                     this.selectedIndex = 0;
                 }
+            };
+
+            const sanitizeText = (text) => {
+                if (!text) return '';
+                return text.replace(/\x1b\[[0-9;]*[mGJKH]/g, '');
+            };
+
+            const insertText = (text, { fromPaste = false } = {}) => {
+                if (!text) return;
+                const normalized = fromPaste
+                    ? text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n/g, ' ')
+                    : text;
+                input = input.slice(0, cursorPos) + normalized + input.slice(cursorPos);
+                cursorPos += normalized.length;
+                redrawLine();
+                this.selectedIndex = 0;
+                updateSuggestions();
             };
 
             const redrawLine = () => {
@@ -97,6 +116,36 @@ class AutocompleteInput {
             };
 
             const onKeypress = (key) => {
+                const PASTE_START = '\x1b[200~';
+                const PASTE_END = '\x1b[201~';
+
+                if (key && (isPasting || key.includes(PASTE_START))) {
+                    let chunk = key;
+                    if (!isPasting) {
+                        const startIdx = chunk.indexOf(PASTE_START);
+                        if (startIdx !== -1) {
+                            isPasting = true;
+                            chunk = chunk.slice(startIdx + PASTE_START.length);
+                        }
+                    }
+
+                    if (isPasting) {
+                        const endIdx = chunk.indexOf(PASTE_END);
+                        if (endIdx !== -1) {
+                            pasteBuffer += chunk.slice(0, endIdx);
+                            isPasting = false;
+                            const text = sanitizeText(pasteBuffer);
+                            pasteBuffer = '';
+                            insertText(text, { fromPaste: true });
+                            const remaining = chunk.slice(endIdx + PASTE_END.length);
+                            if (remaining) onKeypress(remaining);
+                        } else {
+                            pasteBuffer += chunk;
+                        }
+                        return;
+                    }
+                }
+
                 // Ctrl+C
                 if (key === '\x03') {
                     cleanup();
@@ -133,6 +182,13 @@ class AutocompleteInput {
 
                     process.stdout.write('\n');
                     resolve(input);
+                    return;
+                }
+
+                // Handle non-bracketed paste chunks with newlines
+                if (key && key.length > 1 && (key.includes('\n') || key.includes('\r'))) {
+                    const text = sanitizeText(key);
+                    insertText(text, { fromPaste: true });
                     return;
                 }
 
@@ -199,13 +255,8 @@ class AutocompleteInput {
 
                 // Regular character or pasted text
                 if (key >= ' ' && !key.startsWith('\x1b')) {
-                    // Filter out ANSI escape codes from pasted text
-                    const plainKey = key.replace(/\x1b\[[0-9;]*[mGJKH]/g, '');
-                    input = input.slice(0, cursorPos) + plainKey + input.slice(cursorPos);
-                    cursorPos += plainKey.length;
-                    redrawLine();
-                    this.selectedIndex = 0;
-                    updateSuggestions();
+                    const plainKey = sanitizeText(key);
+                    insertText(plainKey);
                 }
             };
 

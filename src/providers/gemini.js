@@ -7,8 +7,8 @@ class GeminiProvider extends BaseProvider {
         super(config);
         this.name = 'gemini';
         const settings = config.get('providers.gemini') || {};
-        this.apiKey = settings.apiKey || process.env.GEMINI_API_KEY || '';
-        this.model = settings.model || process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+        this.apiKey = settings.apiKey || '';
+        this.model = settings.model || '';
         this.client = new GoogleGenerativeAI(this.apiKey);
     }
 
@@ -115,14 +115,21 @@ class GeminiProvider extends BaseProvider {
         let allToolCalls = [];
 
         for await (const chunk of result.stream) {
-            const text = chunk.text?.() || '';
-            if (text) {
-                yield { type: 'text', content: text };
+            const candidate = chunk.candidates?.[0];
+            const content = candidate?.content;
+            const parts = content?.parts || [];
+
+            for (const part of parts) {
+                if (part.text) {
+                    yield { type: 'text', content: part.text };
+                }
+
+                // Preserve thought/reasoning for Gemini 3 and 2.0 Thinking models
+                if (part.thought) {
+                    yield { type: 'thought', content: part.thought };
+                }
             }
 
-            // Extract function calls with thought signatures preserved
-            const candidate = chunk.candidates?.[0];
-            const parts = candidate?.content?.parts || [];
             const chunkToolCalls = this._extractToolCalls(parts);
             if (chunkToolCalls) {
                 allToolCalls.push(...chunkToolCalls);
@@ -160,7 +167,7 @@ class GeminiProvider extends BaseProvider {
                 arguments: JSON.stringify(part.functionCall.args || {}),
             },
             // Preserve thought signature for Gemini 3 models
-            thoughtSignature: part.thoughtSignature || undefined,
+            thoughtSignature: part.thoughtSignature || part.thought_signature || undefined,
         }));
     }
 
@@ -192,7 +199,8 @@ class GeminiProvider extends BaseProvider {
                         functionResponse: {
                             name: msg.name || 'tool',
                             response: {
-                                result: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
+                                name: msg.name || 'tool',
+                                content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
                             },
                         },
                     }],
@@ -201,9 +209,15 @@ class GeminiProvider extends BaseProvider {
             }
 
             if (msg.tool_calls) {
-                // Assistant message with tool calls — preserve thought signatures
+                // Assistant message with tool calls
                 const parts = [];
                 if (msg.content) parts.push({ text: msg.content });
+
+                // If message has 'thought', preserve it in the history
+                if (msg.thought) {
+                    parts.push({ thought: msg.thought });
+                }
+
                 for (const tc of msg.tool_calls) {
                     const part = {
                         functionCall: {

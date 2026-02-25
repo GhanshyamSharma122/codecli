@@ -6,10 +6,10 @@ class AzureOpenAIProvider extends BaseProvider {
         super(config);
         this.name = 'azure-openai';
         const settings = config.get('providers.azure-openai') || {};
-        this.apiKey = settings.apiKey || process.env.AZURE_OPENAI_API_KEY || '';
-        this.endpoint = settings.endpoint || process.env.AZURE_OPENAI_ENDPOINT || '';
-        this.deployment = settings.deployment || process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4o';
-        this.apiVersion = settings.apiVersion || process.env.AZURE_OPENAI_API_VERSION || '2024-12-01-preview';
+        this.apiKey = settings.apiKey || '';
+        this.endpoint = settings.endpoint || '';
+        this.deployment = settings.deployment || '';
+        this.apiVersion = settings.apiVersion || '2024-12-01-preview';
         this.model = this.deployment;
     }
 

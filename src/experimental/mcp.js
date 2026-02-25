@@ -12,12 +12,12 @@ class MCPClient {
     }
 
     get enabled() {
-        return process.env.CODECLI_EXPERIMENTAL_MCP === '1';
+        return Boolean(this.config.get('experimental.mcp'));
     }
 
     async connect(serverConfig) {
         if (!this.enabled) {
-            console.log(chalk.yellow('  MCP is experimental. Enable with CODECLI_EXPERIMENTAL_MCP=1'));
+            console.log(chalk.yellow('  MCP is experimental. Enable with `/config set experimental.mcp true --global`'));
             return false;
         }
 

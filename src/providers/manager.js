@@ -58,12 +58,22 @@ const MODEL_TOKEN_LIMITS = {
 class ProviderManager {
     constructor(config) {
         this.config = config;
-        this.providers = {
-            'azure-openai': new AzureOpenAIProvider(config),
-            ollama: new OllamaProvider(config),
-            gemini: new GeminiProvider(config),
-        };
+        this.providers = this._createProviders();
         this.currentProvider = config.get('defaultProvider') || 'gemini';
+    }
+
+    _createProviders() {
+        return {
+            'azure-openai': new AzureOpenAIProvider(this.config),
+            ollama: new OllamaProvider(this.config),
+            gemini: new GeminiProvider(this.config),
+        };
+    }
+
+    refreshProviders() {
+        const previous = this.currentProvider;
+        this.providers = this._createProviders();
+        this.currentProvider = this.providers[previous] ? previous : (this.config.get('defaultProvider') || 'gemini');
     }
 
     get provider() {

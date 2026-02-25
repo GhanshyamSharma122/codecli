@@ -274,6 +274,7 @@ class REPL {
             this.spinner.thinking();
 
             let fullContent = '';
+            let fullThought = '';
             let toolCalls = null;
 
             try {
@@ -287,6 +288,10 @@ class REPL {
                             this.renderer.streamChunk(chunk.content);
                             fullContent += chunk.content;
                             break;
+                        case 'thought':
+                            this.renderer.streamThought(chunk.content);
+                            fullThought += chunk.content;
+                            break;
                         case 'tool_calls':
                             toolCalls = chunk.toolCalls;
                             break;
@@ -298,6 +303,7 @@ class REPL {
                     }
                 }
                 this.renderer.endStream();
+                this.renderer.endStreamThought();
 
             } catch (err) {
                 this.spinner.stop();
@@ -320,12 +326,14 @@ class REPL {
             }
 
             if (!toolCalls || toolCalls.length === 0) {
-                if (fullContent) this.session.addMessage('assistant', fullContent);
+                if (fullContent || fullThought) {
+                    this.session.addMessage('assistant', fullContent, null, { thought: fullThought });
+                }
                 break;
             }
 
-            this.session.addMessage('assistant', fullContent || '', toolCalls);
-            messages.push({ role: 'assistant', content: fullContent || '', tool_calls: toolCalls });
+            this.session.addMessage('assistant', fullContent || '', toolCalls, { thought: fullThought });
+            messages.push({ role: 'assistant', content: fullContent || '', tool_calls: toolCalls, thought: fullThought });
 
             console.log('');
             console.log(theme.separator('Tool Execution'));

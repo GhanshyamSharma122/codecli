@@ -39,11 +39,25 @@ export default {
             const proc = spawn(shell, [shellFlag, command], {
                 cwd: workDir,
                 env: { ...process.env, FORCE_COLOR: '0' },
-                timeout,
             });
 
             let stdout = '';
             let stderr = '';
+            let timedOut = false;
+            let interrupted = false;
+
+            const killSignal = isWindows ? 'SIGTERM' : 'SIGINT';
+            const killTimer = setTimeout(() => {
+                timedOut = true;
+                proc.kill('SIGTERM');
+            }, Math.max(0, timeout));
+
+            const handleSigint = () => {
+                interrupted = true;
+                proc.kill(killSignal);
+            };
+
+            process.on('SIGINT', handleSigint);
 
             proc.stdout.on('data', (data) => {
                 const text = data.toString();
@@ -58,16 +72,22 @@ export default {
             });
 
             proc.on('close', (code) => {
+                clearTimeout(killTimer);
+                process.removeListener('SIGINT', handleSigint);
                 console.log('');
                 resolve({
-                    exitCode: code,
+                    exitCode: interrupted ? 130 : code,
                     stdout: stdout.trim(),
                     stderr: stderr.trim(),
-                    success: code === 0,
+                    success: !timedOut && !interrupted && code === 0,
+                    timedOut,
+                    interrupted,
                 });
             });
 
             proc.on('error', (err) => {
+                clearTimeout(killTimer);
+                process.removeListener('SIGINT', handleSigint);
                 resolve({
                     exitCode: -1,
                     stdout: '',

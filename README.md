@@ -46,30 +46,30 @@ npm install
 npm install -g .
 ```
 
-### Configure
+### Configuration
 
-Create a `.env` file in the project root:
+CodeCLI stores settings in `~/.codecli/config.json`. The first time you run `codecli`, the tool pauses to gather credentials for at least one provider (Azure OpenAI, Gemini, or Ollama) before letting you continue. Defaults such as `gpt-4o`, `gemini-2.0-flash`, or `http://localhost:11434` are offered, but you must explicitly accept or update them so the CLI knows what to use.
 
-```env
-# Azure OpenAI (recommended)
-AZURE_OPENAI_API_KEY=your-key-here
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
-AZURE_OPENAI_DEPLOYMENT=gpt-4o
-AZURE_OPENAI_API_VERSION=2024-12-01-preview
+You can also manage credentials directly with the `codecli config` command or the `/config` slash command:
 
-# Google Gemini (alternative)
-GEMINI_API_KEY=your-gemini-key
-
-# Ollama (local, no key needed)
-OLLAMA_BASE_URL=http://localhost:11434
-
-# Default provider
-CODECLI_PROVIDER=azure-openai
-
-# Experimental features (set to 1 to enable)
-CODECLI_EXPERIMENTAL_AGENT_TEAMS=0
-CODECLI_EXPERIMENTAL_MCP=0
+```bash
+codecli config set providers.azure-openai.apiKey <your-key> --global
+codecli config set providers.azure-openai.endpoint https://your-resource.openai.azure.com --global
+codecli config set providers.azure-openai.deployment gpt-4o --global
+codecli config set providers.gemini.apiKey <your-gemini-key> --global
+codecli config set providers.ollama.host http://localhost:11434 --global
+codecli config set providers.ollama.model llama3.2 --global
+codecli config set defaultProvider gemini --global
 ```
+
+Toggle experimental features the same way:
+
+```bash
+codecli config set experimental.agentTeams true --global
+codecli config set experimental.mcp true --global
+```
+
+Drop the `--global` flag to keep settings inside the current repository (`.codecli.json`), or revisit the interactive prompt by deleting `~/.codecli/config.json` and restarting.
 
 ---
 
@@ -341,7 +341,7 @@ Spawn a focused subagent for a specific task. Subagents have their own context a
 ```
 
 #### `/team`
-Orchestrate multiple agents working together on a complex objective. Enable with `CODECLI_EXPERIMENTAL_AGENT_TEAMS=1`.
+Orchestrate multiple agents working together on a complex objective. Enable with `/config set experimental.agentTeams true --global`.
 ```
 # Run a team on a complex task
 ❯ /team Implement a full REST API with CRUD operations for users, products, and orders
@@ -354,7 +354,7 @@ Orchestrate multiple agents working together on a complex objective. Enable with
 
 ### MCP (Model Context Protocol)
 
-Connect to external tool servers using MCP. Enable with `CODECLI_EXPERIMENTAL_MCP=1`.
+Connect to external tool servers using MCP. Enable with `/config set experimental.mcp true --global`.
 
 #### `/mcp`
 ```
@@ -559,7 +559,6 @@ codecli/
 │   └── utils/
 │       ├── logger.js       # Logging utility
 │       └── diff.js         # Diff rendering
-└── .env                    # Environment configuration
 ```
 
 ---

@@ -12,7 +12,7 @@ export default {
         }
 
         if (!mcpClient.enabled) {
-            console.log(chalk.yellow('  ⚠ MCP is experimental. Enable with CODECLI_EXPERIMENTAL_MCP=1 in .env'));
+            console.log(chalk.yellow('  ⚠ MCP is experimental. Enable with /config set experimental.mcp true --global'));
             return null;
         }
 

@@ -17,7 +17,9 @@ async function typewriter(text, speed = 10) {
 class Renderer {
     constructor() {
         this.buffer = '';
+        this.thoughtBuffer = '';
         this.isStreaming = false;
+        this.isStreamingThought = false;
         this.currentCol = 0;
     }
 
@@ -64,17 +66,31 @@ class Renderer {
     }
 
     streamChunk(chunk) {
-        const { gutterStr, contentWidth } = theme.layout;
         if (!this.isStreaming) {
+            const { gutterStr } = theme.layout;
             this.isStreaming = true;
             this.buffer = '';
             this.currentCol = 0;
             process.stdout.write(gutterStr);
         }
-
         this.buffer += chunk;
+        this._streamText(chunk, chalk.hex('#E2E8F0'));
+    }
 
-        const color = chalk.hex('#E2E8F0');
+    streamThought(chunk) {
+        if (!this.isStreamingThought) {
+            const { gutterStr } = theme.layout;
+            this.isStreamingThought = true;
+            this.thoughtBuffer = '';
+            this.currentCol = 0;
+            process.stdout.write('\n' + gutterStr + chalk.hex('#64748B').italic('Thinking...') + '\n' + gutterStr);
+        }
+        this.thoughtBuffer += chunk;
+        this._streamText(chunk, chalk.hex('#64748B').italic);
+    }
+
+    _streamText(chunk, color) {
+        const { gutterStr, contentWidth } = theme.layout;
         const lines = chunk.split('\n');
 
         for (let i = 0; i < lines.length; i++) {
@@ -108,6 +124,15 @@ class Renderer {
         this.buffer = '';
         this.currentCol = 0;
         this.isStreaming = false;
+    }
+
+    endStreamThought() {
+        if (this.isStreamingThought) {
+            process.stdout.write('\n');
+        }
+        this.thoughtBuffer = '';
+        this.currentCol = 0;
+        this.isStreamingThought = false;
     }
 
     async renderWelcome(providerInfo, tokenInfo = null) {

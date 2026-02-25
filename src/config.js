@@ -7,7 +7,7 @@ const GLOBAL_CONFIG_FILE = path.join(GLOBAL_CONFIG_DIR, 'config.json');
 const PROJECT_CONFIG_FILE = '.codecli.json';
 
 const DEFAULT_CONFIG = {
-  defaultProvider: process.env.DEFAULT_PROVIDER || 'gemini',
+  defaultProvider: 'gemini',
   theme: 'dark',
   permissions: {
     autoApproveRead: true,
@@ -18,21 +18,21 @@ const DEFAULT_CONFIG = {
   },
   providers: {
     'azure-openai': {
-      apiKey: process.env.AZURE_OPENAI_API_KEY || '',
-      endpoint: process.env.AZURE_OPENAI_ENDPOINT || '',
-      deployment: process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4o',
-      apiVersion: process.env.AZURE_OPENAI_API_VERSION || '2024-12-01-preview',
+      apiKey: '',
+      endpoint: '',
+      deployment: '',
+      apiVersion: '2024-12-01-preview',
     },
     ollama: {
-      host: process.env.OLLAMA_HOST || 'http://localhost:11434',
-      model: process.env.OLLAMA_MODEL || 'llama3.2',
+      host: '',
+      model: '',
     },
     gemini: {
-      apiKey: process.env.GEMINI_API_KEY || '',
-      model: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+      apiKey: '',
+      model: '',
     },
   },
-  editor: process.env.EDITOR || 'code',
+  editor: 'code',
   maxTokens: 128000,
   temperature: 0.7,
   experimental: {

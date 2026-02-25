@@ -1,26 +1,22 @@
 import chalk from 'chalk';
 import SubagentManager from './subagent.js';
 
-/**
- * Experimental: Agent Teams.
- * A lead agent coordinates multiple worker agents on complex tasks.
- * Enable via: CODECLI_EXPERIMENTAL_AGENT_TEAMS=1
- */
 class AgentTeams {
-    constructor(providerManager, toolExecutor, context) {
+    constructor(providerManager, toolExecutor, context, config) {
         this.providerManager = providerManager;
         this.toolExecutor = toolExecutor;
         this.context = context;
+        this.config = config;
         this.subagentManager = new SubagentManager(providerManager, toolExecutor, context);
     }
 
     get enabled() {
-        return process.env.CODECLI_EXPERIMENTAL_AGENT_TEAMS === '1';
+        return Boolean(this.config.get('experimental.agentTeams'));
     }
 
     async runTeam(objective) {
         if (!this.enabled) {
-            console.log(chalk.yellow('  Agent Teams is experimental. Enable with CODECLI_EXPERIMENTAL_AGENT_TEAMS=1'));
+            console.log(chalk.yellow('  Agent Teams is experimental. Enable with `/config set experimental.agentTeams true --global`'));
             return null;
         }
 

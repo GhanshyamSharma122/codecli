@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import dotenv from 'dotenv';
 import { Command } from 'commander';
 import chalk from 'chalk';
 import fs from 'fs';
@@ -9,11 +8,6 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Load .env from the codecli source directory first (global defaults),
-// then from the current working directory (project-specific overrides).
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
-dotenv.config({ override: true });
 
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf-8'));
 

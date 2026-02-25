@@ -18,13 +18,13 @@ export default {
             console.log('');
             if (!agentTeams.enabled) {
                 console.log(chalk.yellow('  ⚠ Agent Teams is experimental.'));
-                console.log(chalk.dim('  Enable with: set CODECLI_EXPERIMENTAL_AGENT_TEAMS=1 in .env'));
+                console.log(chalk.dim('  Enable with: /config set experimental.agentTeams true --global'));
             }
             return null;
         }
 
         if (!agentTeams.enabled) {
-            console.log(chalk.yellow('  ⚠ Agent Teams is experimental. Enable with CODECLI_EXPERIMENTAL_AGENT_TEAMS=1'));
+            console.log(chalk.yellow('  ⚠ Agent Teams is experimental. Enable with /config set experimental.agentTeams true --global'));
             return null;
         }
 
