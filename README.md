@@ -50,6 +50,8 @@ npm install -g .
 
 CodeCLI stores settings in `~/.codecli/config.json`. The first time you run `codecli`, the tool pauses to gather credentials for at least one provider (Azure OpenAI, Gemini, or Ollama) before letting you continue. Defaults such as `gpt-4o`, `gemini-2.0-flash`, or `http://localhost:11434` are offered, but you must explicitly accept or update them so the CLI knows what to use.
 
+During setup, use the arrow keys (or press 1/2/3) to pick a provider and hit Enter to accept the highlighted default (for example, the Ollama host defaults to `http://localhost:11434`).
+
 You can also manage credentials directly with the `codecli config` command or the `/config` slash command:
 
 ```bash
@@ -70,6 +72,8 @@ codecli config set experimental.mcp true --global
 ```
 
 Drop the `--global` flag to keep settings inside the current repository (`.codecli.json`), or revisit the interactive prompt by deleting `~/.codecli/config.json` and restarting.
+
+Inside the REPL, `/provider list` shows each provider’s configured fields and `/provider configure` re-triggers the same onboarding prompts (arrow keys + Enter accept defaults).
 
 ---
 
@@ -176,6 +180,15 @@ Display current session info — provider, model, token usage, message count.
 ```
 ❯ /status
 ```
+
+#### `/provider`
+Inspect and refresh provider credentials without touching files.
+```
+❯ /provider list
+❯ /provider configure
+❯ /provider configure gemini
+```
+The prompts mirror the onboarding flow—use arrow keys (or 1/2/3) to pick the provider and press Enter to accept defaults such as Ollama’s `http://localhost:11434`.
 
 ---
 

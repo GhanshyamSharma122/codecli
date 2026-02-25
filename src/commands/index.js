@@ -21,6 +21,7 @@ import teamCmd from './team.js';
 import mcpCmd from './mcp-cmd.js';
 import skillsCmd from './skills.js';
 import godCmd from './god.js';
+import providerCmd from './provider.js';
 
 class CommandRegistry {
     constructor() {
@@ -31,6 +32,7 @@ class CommandRegistry {
             rewindCmd, tasksCmd, statuslineCmd, configCmd,
             // Experimental
             gitCmd, agentCmd, teamCmd, mcpCmd, skillsCmd, godCmd,
+            providerCmd,
         ].forEach(cmd => {
             this.commands.set(cmd.name, cmd);
             if (cmd.aliases) {

@@ -11,24 +11,12 @@ import AgentTeams from './experimental/agent-teams.js';
 import MCPClient from './experimental/mcp.js';
 import GitIntegration from './experimental/git-integration.js';
 import SkillsManager from './skills.js';
-import inquirer from 'inquirer';
 import chalk from 'chalk';
-
-const PROVIDER_SETUP_FIELDS = {
-    'azure-openai': [
-        { key: 'apiKey', label: 'Azure OpenAI API key', required: true },
-        { key: 'endpoint', label: 'Azure OpenAI endpoint URL', required: true },
-        { key: 'deployment', label: 'Azure deployment name (e.g., gpt-4o)', required: true, default: 'gpt-4o' },
-    ],
-    gemini: [
-        { key: 'apiKey', label: 'Google Gemini API key', required: true },
-        { key: 'model', label: 'Gemini model name', default: 'gemini-2.0-flash' },
-    ],
-    ollama: [
-        { key: 'host', label: 'Ollama host URL', default: 'http://localhost:11434', required: true },
-        { key: 'model', label: 'Ollama model name', default: 'llama3.2', required: true },
-    ],
-};
+import {
+    getReadyProviders,
+    promptForProviderFields,
+    promptForProviderSelection,
+} from './utils/provider-setup.js';
 
 export default class CodeCLI {
     constructor(options = {}) {
@@ -198,39 +186,14 @@ export default class CodeCLI {
     }
 
     _readyProviders() {
-        return ['azure-openai', 'gemini', 'ollama'].filter((name) => this._isProviderReady(name));
-    }
-
-    _isProviderReady(name) {
-        const providers = this.config.get('providers') || {};
-        const settings = providers[name] || {};
-        if (name === 'azure-openai') {
-            return Boolean(settings.apiKey && settings.endpoint && settings.deployment);
-        }
-        if (name === 'gemini') {
-            return Boolean(settings.apiKey && settings.model);
-        }
-        if (name === 'ollama') {
-            return Boolean(settings.host && settings.model);
-        }
-        return false;
+        return getReadyProviders(this.config);
     }
 
     async _onboardProvider() {
         console.log(chalk.cyan('\nNo provider credentials were found. Let’s configure one to continue.'));
         while (this._readyProviders().length === 0) {
-            const { provider } = await inquirer.prompt({
-                type: 'list',
-                name: 'provider',
-                message: chalk.cyan('Choose a provider (use arrow keys or press 1/2/3):'),
-                choices: [
-                    { name: 'Azure OpenAI (cloud)', value: 'azure-openai', short: 'Azure' },
-                    { name: 'Google Gemini (cloud)', value: 'gemini', short: 'Gemini' },
-                    { name: 'Ollama (local)', value: 'ollama', short: 'Ollama' },
-                ],
-            });
-
-            await this._configureProvider(provider);
+            const provider = await promptForProviderSelection(chalk.cyan('Choose a provider (use arrow keys or press 1/2/3):'));
+            await promptForProviderFields(this.config, provider);
             this.providerManager.refreshProviders();
         }
 
@@ -243,30 +206,5 @@ export default class CodeCLI {
         this.providerManager.switchProvider(chosen);
         this.config.set('defaultProvider', chosen, 'global');
         console.log(chalk.green(`  ✓ ${chosen} is now the default provider.`));
-    }
-
-    async _configureProvider(provider) {
-        const fields = PROVIDER_SETUP_FIELDS[provider];
-        for (const field of fields) {
-            const existing = this.config.get(`providers.${provider}.${field.key}`) || '';
-            const defaultValue = existing || field.default || '';
-            const { value } = await inquirer.prompt({
-                type: 'input',
-                name: 'value',
-                message: `${field.label}${defaultValue ? ` (default: ${defaultValue})` : ''}`,
-                default: defaultValue,
-                validate: (input) => {
-                    if (field.required && !(input || '').trim()) {
-                        return 'This value is required.';
-                    }
-                    return true;
-                },
-            });
-
-            const trimmed = (value || defaultValue || '').trim();
-            if (trimmed) {
-                this.config.set(`providers.${provider}.${field.key}`, trimmed, 'global');
-            }
-        }
     }
 }
