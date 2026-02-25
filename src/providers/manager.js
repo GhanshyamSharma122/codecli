@@ -109,8 +109,8 @@ class ProviderManager {
         for (const [key, limit] of Object.entries(MODEL_TOKEN_LIMITS)) {
             if (model.startsWith(key)) return limit;
         }
-        // Conservative default
-        return 8192;
+        // Fallback for unknown models
+        return 262144;
     }
 
     /**
