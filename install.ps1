@@ -8,15 +8,10 @@ $INSTALL_DIR = "$env:USERPROFILE\.$APP"
 
 Write-Host "Installing $APP..."
 
+# Check Node
 if (!(Get-Command node -ErrorAction SilentlyContinue)) {
 
     Write-Error "NodeJS not installed https://nodejs.org"
-    exit 1
-}
-
-if (!(Get-Command npm -ErrorAction SilentlyContinue)) {
-
-    Write-Error "npm not found"
     exit 1
 }
 
@@ -43,9 +38,15 @@ Select-Object -First 1
 
 Set-Location $FOLDER.FullName
 
-Write-Host "Installing npm package globally..."
 
-npm install -g .
+Write-Host "Installing dependencies..."
+
+npm install
+
+
+Write-Host "Linking globally..."
+
+npm link
 
 
 Write-Host ""
