@@ -110,7 +110,7 @@ class ProviderManager {
             if (model.startsWith(key)) return limit;
         }
         // Fallback for unknown models
-        return 262144;
+        return 131072;
     }
 
     /**
