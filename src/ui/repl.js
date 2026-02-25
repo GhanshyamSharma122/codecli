@@ -131,8 +131,6 @@ class REPL {
         this._keepAlive = setInterval(() => { }, 30000);
 
         while (this.running) {
-            process.stdin.resume();
-
             const promptStr = this._getPromptString();
             process.stdout.write(promptStr);
 

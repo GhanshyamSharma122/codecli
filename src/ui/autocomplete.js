@@ -31,10 +31,11 @@ class AutocompleteInput {
             this.drawnRows = 0;
             this.lastDrawnRows = 1;
 
+
+            process.stdin.resume();
             if (process.stdin.isTTY) {
                 process.stdin.setRawMode(true);
             }
-            process.stdin.resume();
             process.stdin.setEncoding('utf8');
 
             const cleanup = () => {
@@ -42,6 +43,7 @@ class AutocompleteInput {
                 if (process.stdin.isTTY) {
                     process.stdin.setRawMode(false);
                 }
+                process.stdin.pause();
                 process.stdin.removeListener('data', onKeypress);
                 process.stdout.removeListener('resize', onResize);
             };
