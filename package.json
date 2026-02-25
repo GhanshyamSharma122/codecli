@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "node bin/codecli.js",
-    "dev": "node --watch bin/codecli.js"
+    "dev": "node --watch bin/codecli.js",
+    "test": "node test/provider-setup.test.js"
   },
   "keywords": [
     "cli",
